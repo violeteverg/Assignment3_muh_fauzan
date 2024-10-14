@@ -33,9 +33,10 @@ export class ProductController {
   //get all product controller
   async getAll(req: Request, res: Response): Promise<void> {
     try {
-      const { search, page, limit } = req.query;
+      const { search, page, limit, price } = req.query;
       const product = await productService.getAllProduct(
         search as string,
+        +price,
         +page,
         +limit
       );

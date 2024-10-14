@@ -19,7 +19,12 @@ export class ProductService {
     return product;
   }
   //get all product
-  async getAllProduct(search: string, page: number, limit: number) {
+  async getAllProduct(
+    search: string,
+    price: number,
+    page: number,
+    limit: number
+  ) {
     const products = await prisma.product.findMany({
       where: {
         ...(search && {
@@ -38,13 +43,27 @@ export class ProductService {
             },
           ],
         }),
+        //challenge 2: filter dari price
+        ...(price > 0 && {
+          prd_price: {
+            equals: price,
+          },
+        }),
         prd_stock: { gt: 0 },
         isDelete: false,
       },
     });
+
     const { data, pagination } = paginate(products, page, limit);
-    return { data, pagination };
+
+    // challenge 1:Menghitung totalPrice
+    const totalPrice = data.reduce((acc: number, cur: any) => {
+      return acc + cur.prd_price;
+    }, 0);
+
+    return { data, totalPrice, pagination };
   }
+
   //get product active
   async getProductActived(search: string, page: number, limit: number) {
     const product = await prisma.product.findMany({
@@ -65,7 +84,7 @@ export class ProductService {
             },
           ],
         }),
-        prd_stock: { gt: 0 },
+        // prd_stock: { gt: 0 },
       },
     });
     const { data, pagination } = paginate(product, page, limit);
@@ -85,11 +104,20 @@ export class ProductService {
     if (!productId) {
       throw new Error(`product with id ${id} not found on database`);
     }
+    console.log(productId, "<<<");
+    //challenge 3: dapatkan previous data sebelum di update
+    let prevData: any = {};
+    if (data.prd_name) {
+      prevData["prd_name"] = productId.prd_name;
+    }
+    if (data.prd_price) {
+      prevData["prd_price"] = productId.prd_price;
+    }
     const product = await prisma.product.update({
       where: { id: id },
       data: data,
     });
-    return product;
+    return { product, prevData };
   }
   //update product ative
   async updateProductActive(id: number, isDelete: boolean) {
@@ -117,3 +145,4 @@ export class ProductService {
     return product;
   }
 }
+//challenge
